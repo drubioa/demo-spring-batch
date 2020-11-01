@@ -1,0 +1,1 @@
+INSERT INTO people (name, surname, age) VALUES ('Anonymous1', 'Surname', 18);
