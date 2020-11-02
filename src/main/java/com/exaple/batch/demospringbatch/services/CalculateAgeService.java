@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
+
 @Service
 @Slf4j
 public class CalculateAgeService {
@@ -13,7 +15,7 @@ public class CalculateAgeService {
     @Autowired
     private PeopleRepository peopleRepository;
 
-    public void recalculateAge(People p) {
+    public void recalculateAge(final People p) {
         p.setAge(p.getAge() + 1);
         peopleRepository.save(p);
     }

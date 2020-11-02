@@ -1,7 +1,6 @@
 package com.exaple.batch.demospringbatch.model;
 
 import lombok.Data;
-
 import javax.persistence.*;
 
 @Entity

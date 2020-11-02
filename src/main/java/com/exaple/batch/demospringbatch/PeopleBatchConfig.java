@@ -5,13 +5,14 @@ import com.exaple.batch.demospringbatch.services.CalculateAgeService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.adapter.ItemWriterAdapter;
@@ -24,6 +25,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import javax.persistence.EntityManagerFactory;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Configuration
@@ -43,8 +45,6 @@ public class PeopleBatchConfig {
     private CalculateAgeService calculateAgeService;
     @Autowired
     private JobLauncher jobLauncher;
-    @Autowired
-    private JobRepository jobRepository;
 
     private AtomicInteger batchRunCounter = new AtomicInteger(0);
 
@@ -91,11 +91,11 @@ public class PeopleBatchConfig {
     @Scheduled(fixedRate = 30_000L)
     public void launchJob() throws Exception {
         log.info("launch Job 'incrementAgePeopleJob'");
-        /*JobExecution jobExecution = jobLauncher
+        JobExecution jobExecution = jobLauncher
                     .run(incrementAgePeopleJob(step1(itemReader(), itemWriter())),
                             new JobParametersBuilder()
                             .addDate("launchDate", new Date())
-                            .toJobParameters());*/
+                            .toJobParameters());
         batchRunCounter.incrementAndGet();
     }
 
