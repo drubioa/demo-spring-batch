@@ -1,9 +1,17 @@
-DROP TABLE people IF EXISTS;
+drop table people if exists;
 
-CREATE TABLE people  (
-    person_id IDENTITY NOT NULL PRIMARY KEY,
-    name VARCHAR(20),
-    surname VARCHAR(20),
-    age INT(3)
+create table books (
+    book_id identity not null primary key,
+    title varchar(100),
+    person_id int,
+    ventas int default 0
 );
 
+create table people  (
+    person_id identity not null primary key,
+    name varchar(20),
+    surname varchar(20),
+    age int(3) default 18,
+    book_id int,
+    foreign key (book_id) references books (book_id)
+);

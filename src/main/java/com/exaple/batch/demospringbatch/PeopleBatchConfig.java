@@ -1,7 +1,7 @@
 package com.exaple.batch.demospringbatch;
 
-import com.exaple.batch.demospringbatch.model.People;
-import com.exaple.batch.demospringbatch.services.CalculateAgeService;
+import com.exaple.batch.demospringbatch.item.PeopleItemProcessor;
+import com.exaple.batch.demospringbatch.model.Book;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.batch.core.Job;
@@ -13,16 +13,19 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.adapter.ItemWriterAdapter;
+import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.builder.JpaPagingItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManagerFactory;
 import java.util.Date;
@@ -42,38 +45,44 @@ public class PeopleBatchConfig {
     @Autowired
     private EntityManagerFactory entityManagerFactory;
     @Autowired
-    private CalculateAgeService calculateAgeService;
-    @Autowired
     private JobLauncher jobLauncher;
 
     private AtomicInteger batchRunCounter = new AtomicInteger(0);
 
     /* JpaPagingItemReader */
     @Bean
-    public ItemReader<People> itemReader() {
-        val jpqlQuery = "select p from People p";
-        return new JpaPagingItemReaderBuilder<People>()
+    public ItemReader<Book> itemReader() {
+        val jpqlQuery = "select p from Book p";
+        return new JpaPagingItemReaderBuilder<Book>()
                 .name("itemReader")
                 .entityManagerFactory(entityManagerFactory)
                 .queryString(jpqlQuery)
-                .pageSize(5)
+                .pageSize(1)
                 .build();
     }
 
-    /* Reusing Existing Services */
+    /* JpaItemWriter */
+    @Transactional
     @Bean
-    public ItemWriter<People> itemWriter() {
-        ItemWriterAdapter<People> reader = new ItemWriterAdapter<>();
-        reader.setTargetObject(calculateAgeService);
-        reader.setTargetMethod("recalculateAge");
-        return reader;
+    public ItemWriter<Book> itemWriter() {
+        JpaItemWriter<Book> employeeJpaItemWriter = new JpaItemWriter<>();
+        employeeJpaItemWriter.setEntityManagerFactory(entityManagerFactory);
+        return employeeJpaItemWriter;
     }
 
     @Bean
-    public Step step1(ItemReader<People> reader, ItemWriter<People> writer) {
+    public ItemProcessor<Book, Book> itemProcessor() {
+        return new PeopleItemProcessor();
+    }
+
+    @Bean
+    public Step step1(@Qualifier("itemReader") ItemReader<Book> reader,
+                      @Qualifier("itemProcessor") ItemProcessor<Book, Book> processor,
+                      @Qualifier("itemWriter") ItemWriter<Book> writer) {
         return stepBuilderFactory.get("step1")
-                .<People, People> chunk(10)
+                .<Book, Book> chunk(10)
                 .reader(reader)
+                .processor(processor)
                 .writer(writer)
                 .build();
     }
@@ -92,7 +101,7 @@ public class PeopleBatchConfig {
     public void launchJob() throws Exception {
         log.info("launch Job 'incrementAgePeopleJob'");
         JobExecution jobExecution = jobLauncher
-                    .run(incrementAgePeopleJob(step1(itemReader(), itemWriter())),
+                    .run(incrementAgePeopleJob(step1(itemReader(), itemProcessor(), itemWriter())),
                             new JobParametersBuilder()
                             .addDate("launchDate", new Date())
                             .toJobParameters());
